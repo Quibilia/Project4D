@@ -189,18 +189,31 @@ void draw() {
   }
   popMatrix();
   pushMatrix();
-  translate(-150, 0, 0);
+  translate(-300, 0, 0);
   for (int i = 0; i < 16; i++) {
-    float[] v1 = normalize(i);
-    float x1 = (v1[0]+(v1[3]/3));
-    float y1 = (v1[1]+(v1[3]/3));
-    float z1 = (v1[2]+(v1[3]/3));
-    x1 = x1*scaleMulLeft;
-    y1 = y1*scaleMulLeft;
-    z1 = z1*scaleMulLeft;
+    float x = vertices[i][0];
+    float y = vertices[i][1];
+    float z = vertices[i][2];
+    float w = vertices[i][3];
+    float x1 = x+(w/3);
+    float y1 = y+(w/3);
+    float z1 = z+(w/3);
+    x1 = x1*scaleMulRight;
+    y1 = y1*scaleMulRight;
+    z1 = z1*scaleMulRight;
     for (int j = 0; j < 4; j++) {
       int cnt = connections[i][j];
       if (cnt != -1) {
+        float x2 = vertices[cnt][0];
+        float y2 = vertices[cnt][1];
+        float z2 = vertices[cnt][2];
+        float w2 = vertices[cnt][3];
+        float x3 = x2+(w2/3);
+        float y3 = y2+(w2/3);
+        float z3 = z2+(w2/3);
+        x3 = x3*scaleMulRight;
+        y3 = y3*scaleMulRight;
+        z3 = z3*scaleMulRight;
         if (i > 7 && cnt > 7) { 
           stroke(255, 48, 48);
         } else if ((i > 7) != (cnt > 7)) { 
@@ -208,50 +221,51 @@ void draw() {
         } else if (i < 8 && cnt < 8) {
           stroke(48, 48, 255);
         }
-        float[] v2 = normalize(cnt);
-        float x2 = v2[0]+(v2[3]/3);
-        float y2 = v2[1]+(v2[3]/3);
-        float z2 = v2[2]+(v2[3]/3);
-        x2 = x2*scaleMulLeft;
-        y2 = y2*scaleMulLeft;
-        z2 = z2*scaleMulLeft;
-        line(x1, y1, z1, x2, y2, z2);
+        line(x1, y1, z1, x3, y3, z3);
       }
     }
   }
   popMatrix();
   pushMatrix();
-  translate(150, 0, 0);
-  for (int i = 0; i < 8; i++) {
+  translate(0, 0, 0);
+  float[][] endpoints = new float[256][3];
+  for (int i = 0; i < 16; i++) {
+  }
+  popMatrix();
+  pushMatrix();
+  translate(300, 0, 0);
+  for (int i = 0; i < 16; i++) {
     float x = vertices[i][0];
     float y = vertices[i][1];
     float z = vertices[i][2];
-    float[] v1 = normalize(i);
-    float x1 = v1[0];
-    float y1 = v1[1];
-    float z1 = v1[2];
-    x = x*scaleMulRight;
-    y = y*scaleMulRight;
-    z = z*scaleMulRight;
+    float w = vertices[i][3];
+    float x1 = x*(1.0-(w/3.0));
+    float y1 = y*(1.0-(w/3.0));
+    float z1 = z*(1.0-(w/3.0));
     x1 = x1*scaleMulRight;
     y1 = y1*scaleMulRight;
     z1 = z1*scaleMulRight;
-    stroke(48, 255, 48);
-    line(x, y, z, x1, y1, z1);
     for (int j = 0; j < 4; j++) {
       int cnt = connections[i][j];
-      if (cnt != -1 && cnt < 8) {
-        float x2 = vertices[cnt][0]*scaleMulRight;
-        float y2 = vertices[cnt][1]*scaleMulRight;
-        float z2 = vertices[cnt][2]*scaleMulRight;
-        stroke(48, 48, 255);
-        line(x, y, z, x2, y2, z2);
-        float[] v2 = normalize(cnt);
-        x2 = v2[0]*scaleMulRight;
-        y2 = v2[1]*scaleMulRight;
-        z2 = v2[2]*scaleMulRight;
-        stroke(255, 48, 48);
-        line(x1, y1, z1, x2, y2, z2);
+      if (cnt != -1) {
+        float x2 = vertices[cnt][0];
+        float y2 = vertices[cnt][1];
+        float z2 = vertices[cnt][2];
+        float w2 = vertices[cnt][3];
+        float x3 = x2*(1.0-(w2/3.0));
+        float y3 = y2*(1.0-(w2/3.0));
+        float z3 = z2*(1.0-(w2/3.0));
+        x3 = x3*scaleMulRight;
+        y3 = y3*scaleMulRight;
+        z3 = z3*scaleMulRight;
+        if (i > 7 && cnt > 7) { 
+          stroke(255, 48, 48);
+        } else if ((i > 7) != (cnt > 7)) { 
+          stroke(48, 255, 48);
+        } else if (i < 8 && cnt < 8) {
+          stroke(48, 48, 255);
+        }
+        line(x1, y1, z1, x3, y3, z3);
       }
     }
   }
@@ -355,9 +369,11 @@ void draw() {
   }
   if (keys[20] == true) {
     angleX = angleX + constAngle;
+    if (angleX > radians(60.0)) { angleX = radians(60.0); }
   }
   if (keys[21] == true) {
     angleX = angleX - constAngle;
+    if (angleX < radians(-60.0)) { angleX = radians(-60.0); }
   }
   lookAtX = cameraX + sin(angleZ);
   lookAtY = cameraY + cos(angleZ);
