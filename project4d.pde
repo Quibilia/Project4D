@@ -36,6 +36,8 @@ float[][] vertices_const = {
   {1.0, 1.0, 1.0, 1.0}
 };
 
+int vertexCount = 16;
+
 int[][] connections = {
   {1, 2, 4, 8}, 
   {3, 5, 9, -1}, 
@@ -55,20 +57,6 @@ int[][] connections = {
   {-1, -1, -1, -1}, 
 };
 
-float[] normalize(float x, float y, float z, float w) {
-  float msq = sqrt(sq(x) + sq(y) + sq(z) + sq(w));
-  float[] dOut = {x/msq, y/msq, z/msq, w/msq};
-  return dOut;
-}
-
-float[] normalize(float x, float y, float z) { 
-  return normalize(x, y, z, 0);
-}
-
-float[] normalize(int i) {
-  return normalize(vertices[i][0], vertices[i][1], vertices[i][2], vertices[i][3]);
-}
-
 float rotateXY = 0;
 float rotateXZ = 0;
 float rotateYZ = 0;
@@ -80,10 +68,12 @@ float constRotate = radians(1);
 float constMove = 4.5;
 float constAngle = radians(2);
 float scaleMulLeft = 120;
+float scaleMulCenter = 60;
 float scaleMulRight = 60;
 float cameraX = 0.0;
 float cameraY = 0.0;
 float cameraZ = 0.0;
+float cameraW = 0.0;
 float angleX = 0.0;
 float angleY = 0.0;
 float angleZ = 0.0;
@@ -91,8 +81,8 @@ float lookAtX = 0.0;
 float lookAtY = 0.0;
 float lookAtZ = 0.0;
 
-boolean[] keys = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
-char[] keyMap = {'r', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'i', 'k', 'o', 'l', 'a', 'd', 's', 'w', 'e', 'q', '4', '6', '2', '8'};
+boolean[] keys = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
+char[] keyMap = {'r', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'i', 'k', 'o', 'l', 'a', 'd', 's', 'w', 'e', 'q', 'z', 'x', '4', '6', '2', '8'};
 
 void rotYZ(int i) {
   float sinX = sin(rotateYZ);
@@ -163,6 +153,7 @@ void setup() {
   cameraX = 0.0;
   cameraY = -600;
   cameraZ = 0.0;
+  cameraW = 0.0;
   lookAtX = 0.0;
   lookAtY = 0.0;
   lookAtZ = 0.0;
@@ -176,21 +167,23 @@ void draw() {
   clear();
   pushMatrix();
   camera(cameraX, cameraY, cameraZ, lookAtX, lookAtY, lookAtZ, 0, 0, 1);
-  pushMatrix();
   stroke(255);
+  ambientLight(128, 128, 128);
+  directionalLight(160, 160, 160, 1, 1, -1);
+  pushMatrix();
   noFill();
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < vertexCount; i++) {
     for (int j = 0; j < 4; j++) {
       vertices[i][j] = vertices_const[i][j];
     }
   }
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < vertexCount; i++) {
     RotateVertex(i);
   }
   popMatrix();
   pushMatrix();
   translate(-300, 0, 0);
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < vertexCount; i++) {
     float x = vertices[i][0];
     float y = vertices[i][1];
     float z = vertices[i][2];
@@ -228,13 +221,68 @@ void draw() {
   popMatrix();
   pushMatrix();
   translate(0, 0, 0);
-  float[][] endpoints = new float[256][3];
-  for (int i = 0; i < 16; i++) {
+  float[][] endpoints = new float[vertexCount*4][3];
+  int epIndex = 0;
+  for (int i = 0; i < vertexCount; i++) {
+    float[] v1 = vertices[i];
+    float w1 = v1[3]*scaleMulCenter;
+    for (int j = 0; j < 4; j++) {
+      int cnt = connections[i][j];
+      if (cnt != -1) {
+        float[] v2 = vertices[cnt];
+        float w2 = v2[3]*scaleMulCenter;
+        if ((w1 < cameraW) != (w2 < cameraW) || w1 == cameraW || w2 == cameraW) {
+          if (w1 == cameraW) {
+            endpoints[epIndex][0] = v1[0]*scaleMulCenter;
+            endpoints[epIndex][1] = v1[1]*scaleMulCenter;
+            endpoints[epIndex][2] = v1[2]*scaleMulCenter;
+            epIndex = epIndex + 1;
+          } else if (w2 == cameraW) {
+            endpoints[epIndex][0] = v2[0]*scaleMulCenter;
+            endpoints[epIndex][1] = v2[1]*scaleMulCenter;
+            endpoints[epIndex][2] = v2[2]*scaleMulCenter;
+            epIndex = epIndex + 1;
+          } else {
+            float x1 = v1[0]*scaleMulCenter;
+            float y1 = v1[1]*scaleMulCenter;
+            float z1 = v1[2]*scaleMulCenter;
+            float x2 = v2[0]*scaleMulCenter;
+            float y2 = v2[1]*scaleMulCenter;
+            float z2 = v2[2]*scaleMulCenter;
+            float s = (cameraW-w1)/(w2-w1);
+            float dx = s*(x2-x1);
+            float dy = s*(y2-y1);
+            float dz = s*(z2-z1);
+            endpoints[epIndex][0] = x1+dx;
+            endpoints[epIndex][1] = y1+dy;
+            endpoints[epIndex][2] = z1+dz;
+            epIndex = epIndex + 1;
+          }
+        }
+      }
+    }
   }
   popMatrix();
   pushMatrix();
+  translate(0, 0, 0);
+  fill(48, 255, 48);
+  noStroke();
+  beginShape(TRIANGLES);
+  for (int i = 0; i < epIndex; i++) {
+    for (int j = i+1; j < epIndex; j++) {
+      for (int k = j+1; k < epIndex; k++) {
+        vertex(endpoints[i][0], endpoints[i][1], endpoints[i][2]);
+        vertex(endpoints[j][0], endpoints[j][1], endpoints[j][2]);
+        vertex(endpoints[k][0], endpoints[k][1], endpoints[k][2]);
+      }
+    }
+  }
+  endShape(CLOSE);
+  popMatrix();
+  pushMatrix();
   translate(300, 0, 0);
-  for (int i = 0; i < 16; i++) {
+  noFill();
+  for (int i = 0; i < vertexCount; i++) {
     float x = vertices[i][0];
     float y = vertices[i][1];
     float z = vertices[i][2];
@@ -362,24 +410,37 @@ void draw() {
     cameraZ = cameraZ + constMove;
   }
   if (keys[18] == true) {
-    angleZ = angleZ - constAngle;
+    cameraW = cameraW - constMove/4.0;
   }
   if (keys[19] == true) {
-    angleZ = angleZ + constAngle;
+    cameraW = cameraW + constMove/4.0;
   }
   if (keys[20] == true) {
-    angleX = angleX + constAngle;
-    if (angleX > radians(60.0)) { angleX = radians(60.0); }
+    angleZ = angleZ - constAngle;
   }
   if (keys[21] == true) {
+    angleZ = angleZ + constAngle;
+  }
+  if (keys[22] == true) {
+    angleX = angleX + constAngle;
+    if (angleX > radians(60.0)) { 
+      angleX = radians(60.0);
+    }
+  }
+  if (keys[23] == true) {
     angleX = angleX - constAngle;
-    if (angleX < radians(-60.0)) { angleX = radians(-60.0); }
+    if (angleX < radians(-60.0)) { 
+      angleX = radians(-60.0);
+    }
   }
   lookAtX = cameraX + sin(angleZ);
   lookAtY = cameraY + cos(angleZ);
   lookAtZ = cameraZ + sin(angleX);
   popMatrix();
   popMatrix();
+  noLights();
+  stroke(255);
+  noFill();
   textSize(16);
   text("XY: ", width/4, height-144);
   text("XZ: ", width/4, height-120);
@@ -387,16 +448,24 @@ void draw() {
   text("XW: ", width/4, height-72);
   text("YW: ", width/4, height-48);
   text("ZW: ", width/4, height-24);
+  text("Camera X: ", 3*width/4-96, height-120);
+  text("Camera Y: ", 3*width/4-96, height-96);
+  text("Camera Z: ", 3*width/4-96, height-72);
+  text("Camera W: ", 3*width/4-96, height-48);
   text(degrees(rotateXY), width/4+24, height-144);
   text(degrees(rotateXZ), width/4+24, height-120);
   text(degrees(rotateYZ), width/4+24, height-96);
   text(degrees(rotateXW), width/4+24, height-72);
   text(degrees(rotateYW), width/4+24, height-48);
   text(degrees(rotateZW), width/4+24, height-24);
+  text(cameraX, 3*width/4, height-120);
+  text(cameraY, 3*width/4, height-96);
+  text(cameraZ, 3*width/4, height-72);
+  text(cameraW, 3*width/4, height-48);
 }
 
 void keyPressed() {
-  for (int i = 0; i < 22; i++) {
+  for (int i = 0; i < 24; i++) {
     if (key == keyMap[i]) {
       keys[i] = true;
     }
@@ -408,11 +477,18 @@ void keyPressed() {
     rotateXW = 0.0;
     rotateYW = 0.0;
     rotateZW = 0.0;
+    cameraX = 0.0;
+    cameraY = -600.0;
+    cameraZ = 0.0;
+    cameraW = 0.0;
+    angleX = 0.0;
+    angleY = 0.0;
+    angleZ = 0.0;
   }
 }
 
 void keyReleased() {
-  for (int i = 0; i < 22; i++) {
+  for (int i = 0; i < 24; i++) {
     if (key == keyMap[i]) {
       keys[i] = false;
     }
